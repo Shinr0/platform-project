@@ -1,0 +1,37 @@
+name: Delete GCP VM via Crossplane
+
+on:
+  workflow_dispatch:
+    inputs:
+      vm_name:
+        description: "Name of the VM to delete"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  delete-claim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify claim exists
+        run: |
+          if [[ ! -f "crossplane/claims/${{ inputs.vm_name }}.yaml" ]]; then
+            echo "::error::No VM claim found with name '${{ inputs.vm_name }}'."
+            exit 1
+          fi
+
+      - name: Remove Crossplane Claim
+        run: rm -f "crossplane/claims/${{ inputs.vm_name }}.yaml"
+
+      - name: Commit and push deletion
+        run: |
+          git config user.name "platform-eng-bot"
+          git config user.email "platform-eng-bot@github.com"
+          git add -A crossplane/claims/
+          git commit -m "feat(vm): delete VM '${{ inputs.vm_name }}'"
+          git push

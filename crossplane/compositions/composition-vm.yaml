@@ -1,0 +1,58 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: vm-gcp-compute
+  labels:
+    crossplane.io/xrd: xvirtualmachines.compute.platform.local
+    provider: gcp
+spec:
+  compositeTypeRef:
+    apiVersion: compute.platform.local/v1alpha1
+    kind: XVirtualMachine
+  resources:
+    - name: compute-instance
+      base:
+        apiVersion: compute.gcp.upbound.io/v1beta1
+        kind: Instance
+        spec:
+          forProvider:
+            zone: europe-west1-b
+            machineType: e2-micro
+            bootDisk:
+              - initializeParams:
+                  - image: projects/debian-cloud/global/images/family/debian-12
+                    size: 20
+            networkInterface:
+              - network: default
+                accessConfig:
+                  - networkTier: STANDARD
+            metadata:
+              managed-by: crossplane-platform-eng
+            tags:
+              - platform-eng
+          providerConfigRef:
+            name: default
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.vmName
+          toFieldPath: metadata.name
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.vmName
+          toFieldPath: metadata.annotations[crossplane.io/external-name]
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.machineType
+          toFieldPath: spec.forProvider.machineType
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.zone
+          toFieldPath: spec.forProvider.zone
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.parameters.diskSizeGb
+          toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].size
+        - type: CombineFromComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.parameters.imageFamily
+            strategy: string
+            string:
+              fmt: "projects/debian-cloud/global/images/family/%s"
+          toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].image

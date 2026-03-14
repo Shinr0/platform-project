@@ -1,0 +1,101 @@
+name: Create GCP VM via Crossplane
+
+on:
+  workflow_dispatch:
+    inputs:
+      vm_name:
+        description: "VM name (lowercase, hyphens only)"
+        required: true
+        type: string
+      machine_type:
+        description: "GCP machine type"
+        required: false
+        type: choice
+        default: "e2-micro"
+        options:
+          - e2-micro
+          - e2-small
+          - e2-medium
+          - n1-standard-1
+          - n1-standard-2
+      zone:
+        description: "GCP zone"
+        required: false
+        type: choice
+        default: "europe-west1-b"
+        options:
+          - europe-west1-b
+          - europe-west1-c
+          - europe-west1-d
+          - us-central1-a
+          - us-east1-b
+      disk_size_gb:
+        description: "Boot disk size in GB"
+        required: false
+        type: number
+        default: 20
+
+permissions:
+  contents: write
+
+jobs:
+  generate-claim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate VM name
+        run: |
+          if [[ ! "${{ inputs.vm_name }}" =~ ^[a-z][a-z0-9-]{2,62}$ ]]; then
+            echo "::error::VM name must start with a lowercase letter, contain only lowercase letters, numbers, and hyphens, and be 3-63 characters long."
+            exit 1
+          fi
+
+      - name: Check if claim already exists
+        run: |
+          if [[ -f "crossplane/claims/${{ inputs.vm_name }}.yaml" ]]; then
+            echo "::error::A VM claim with name '${{ inputs.vm_name }}' already exists."
+            exit 1
+          fi
+
+      - name: Generate Crossplane Claim
+        run: |
+          cat > "crossplane/claims/${{ inputs.vm_name }}.yaml" <<'CLAIM_EOF'
+          apiVersion: compute.platform.local/v1alpha1
+          kind: VirtualMachine
+          metadata:
+            name: ${{ inputs.vm_name }}
+            namespace: default
+            labels:
+              managed-by: platform-eng
+              created-by: github-actions
+          spec:
+            parameters:
+              vmName: ${{ inputs.vm_name }}
+              machineType: ${{ inputs.machine_type }}
+              zone: ${{ inputs.zone }}
+              diskSizeGb: ${{ inputs.disk_size_gb }}
+              imageFamily: debian-12
+          CLAIM_EOF
+
+          # Fix indentation (heredoc adds leading spaces)
+          sed -i 's/^          //' "crossplane/claims/${{ inputs.vm_name }}.yaml"
+
+      - name: Validate generated YAML
+        run: |
+          python3 -c "
+          import yaml, sys
+          with open('crossplane/claims/${{ inputs.vm_name }}.yaml') as f:
+              doc = yaml.safe_load(f)
+          assert doc['kind'] == 'VirtualMachine', 'Invalid kind'
+          print('YAML validation passed')
+          "
+
+      - name: Commit and push claim
+        run: |
+          git config user.name "platform-eng-bot"
+          git config user.email "platform-eng-bot@github.com"
+          git add "crossplane/claims/${{ inputs.vm_name }}.yaml"
+          git commit -m "feat(vm): create VM '${{ inputs.vm_name }}' [machine=${{ inputs.machine_type }}, zone=${{ inputs.zone }}]"
+          git push

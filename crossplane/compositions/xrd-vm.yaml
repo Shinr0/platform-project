@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xvirtualmachines.compute.platform.local
+spec:
+  group: compute.platform.local
+  names:
+    kind: XVirtualMachine
+    plural: xvirtualmachines
+  claimNames:
+    kind: VirtualMachine
+    plural: virtualmachines
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  properties:
+                    vmName:
+                      type: string
+                      description: Name of the Compute Engine instance
+                    machineType:
+                      type: string
+                      description: "GCP machine type (e.g. e2-micro, e2-small, n1-standard-1)"
+                      default: e2-micro
+                    zone:
+                      type: string
+                      description: "GCP zone (e.g. europe-west1-b)"
+                      default: europe-west1-b
+                    diskSizeGb:
+                      type: integer
+                      description: Boot disk size in GB
+                      default: 20
+                    imageFamily:
+                      type: string
+                      description: "OS image family (e.g. debian-12, ubuntu-2204-lts)"
+                      default: debian-12
+                  required:
+                    - vmName
+              required:
+                - parameters
