@@ -96,6 +96,18 @@ install_gcp_provider() {
     log "GCP provider configured."
 }
 
+install_crossplane_functions() {
+    if kubectl get function.pkg.crossplane.io function-patch-and-transform &>/dev/null 2>&1; then
+        warn "function-patch-and-transform already installed, skipping."
+    else
+        log "Installing function-patch-and-transform..."
+        kubectl apply -f "$(dirname "$0")/../crossplane/provider/function-patch-and-transform.yaml"
+        log "Waiting for function to become healthy..."
+        kubectl wait --for=condition=healthy function.pkg.crossplane.io/function-patch-and-transform \
+            --timeout=180s || warn "Function not yet healthy — it may need a few more minutes."
+    fi
+}
+
 install_crossplane_compositions() {
     log "Applying XRD and Composition..."
     kubectl apply -f "$(dirname "$0")/../crossplane/compositions/xrd-vm.yaml"
@@ -138,6 +150,7 @@ main() {
     create_kind_cluster
     install_crossplane
     install_gcp_provider
+    install_crossplane_functions
     install_crossplane_compositions
     install_argocd
     apply_argocd_application

@@ -289,8 +289,23 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="diskSize">Disk Size (GB)</label>
+                    <label for="diskSize">Boot Disk (GB)</label>
                     <input type="number" id="diskSize" value="20" min="10" max="500">
+                </div>
+                <div class="form-group">
+                    <label for="dataDiskSize">Data Disk (GB)</label>
+                    <input type="number" id="dataDiskSize" value="0" min="0" max="500"
+                           title="0 = no extra disk">
+                </div>
+                <div class="form-group" style="display:flex;gap:24px;align-items:center;padding-top:22px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="spotVm" style="width:18px;height:18px;accent-color:var(--primary)">
+                        Spot VM
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="staticIp" style="width:18px;height:18px;accent-color:var(--primary)">
+                        Static IP
+                    </label>
                 </div>
             </div>
             <div class="form-actions">
@@ -401,17 +416,29 @@ function saveSettings() {
 }
 
 async function triggerWorkflow(workflowFile, inputs) {
-    const { repo } = getConfig();
-    if (!repo) { showToast('Configure repository in Settings first', 'error'); return false; }
+    const { repo, token } = getConfig();
+    if (!repo || !token) { showToast('Configure repository and token in Settings first', 'error'); return false; }
 
-    const resp = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`, {
+    const url = `https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`;
+    console.log('[Platform] Triggering workflow:', url, inputs);
+
+    const stringInputs = {};
+    for (const [k, v] of Object.entries(inputs)) {
+        stringInputs[k] = String(v);
+    }
+
+    const resp = await fetch(url, {
         method: 'POST',
         headers: ghHeaders(),
-        body: JSON.stringify({ ref: 'main', inputs }),
+        body: JSON.stringify({ ref: 'main', inputs: stringInputs }),
     });
+    console.log('[Platform] Response status:', resp.status);
     if (resp.status === 204) return true;
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.message || `HTTP ${resp.status}`);
+    const body = await resp.text();
+    console.error('[Platform] Error response:', body);
+    let msg;
+    try { msg = JSON.parse(body).message; } catch { msg = body; }
+    throw new Error(msg || `HTTP ${resp.status}`);
 }
 
 async function handleCreateVm(e) {
@@ -430,6 +457,9 @@ async function handleCreateVm(e) {
             machine_type: document.getElementById('machineType').value,
             zone: document.getElementById('zone').value,
             disk_size_gb: document.getElementById('diskSize').value,
+            spot: document.getElementById('spotVm').checked,
+            static_ip: document.getElementById('staticIp').checked,
+            data_disk_size_gb: document.getElementById('dataDiskSize').value,
         });
         showToast('VM creation triggered! ArgoCD will sync shortly.', 'success');
         document.getElementById('vmName').value = '';
@@ -487,8 +517,14 @@ async function loadVMs() {
                 const yamlText = await contentResp.text();
                 const machineMatch = yamlText.match(/machineType:\s*(\S+)/);
                 const zoneMatch = yamlText.match(/zone:\s*(\S+)/);
+                const spotMatch = yamlText.match(/spot:\s*(true)/);
+                const ipMatch = yamlText.match(/staticIp:\s*(true)/);
+                const diskMatch = yamlText.match(/dataDiskSizeGb:\s*(\d+)/);
                 if (machineMatch) meta += machineMatch[1];
                 if (zoneMatch) meta += ` &middot; ${zoneMatch[1]}`;
+                if (spotMatch) meta += ' &middot; Spot';
+                if (ipMatch) meta += ' &middot; Static IP';
+                if (diskMatch && diskMatch[1] !== '0') meta += ` &middot; +${diskMatch[1]}GB data`;
             } catch { /* ignore */ }
             return `
                 <div class="vm-item">

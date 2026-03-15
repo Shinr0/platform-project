@@ -34,6 +34,21 @@ on:
         required: false
         type: number
         default: 20
+      spot:
+        description: "Use Spot/Preemptible VM (cheaper)"
+        required: false
+        type: boolean
+        default: false
+      static_ip:
+        description: "Attach a static external IP"
+        required: false
+        type: boolean
+        default: false
+      data_disk_size_gb:
+        description: "Additional data disk size in GB (0 = none)"
+        required: false
+        type: number
+        default: 0
 
 permissions:
   contents: write
@@ -77,9 +92,11 @@ jobs:
               zone: ${{ inputs.zone }}
               diskSizeGb: ${{ inputs.disk_size_gb }}
               imageFamily: debian-12
+              spot: ${{ inputs.spot }}
+              staticIp: ${{ inputs.static_ip }}
+              dataDiskSizeGb: ${{ inputs.data_disk_size_gb }}
           CLAIM_EOF
 
-          # Fix indentation (heredoc adds leading spaces)
           sed -i 's/^          //' "crossplane/claims/${{ inputs.vm_name }}.yaml"
 
       - name: Validate generated YAML
@@ -97,5 +114,5 @@ jobs:
           git config user.name "platform-eng-bot"
           git config user.email "platform-eng-bot@github.com"
           git add "crossplane/claims/${{ inputs.vm_name }}.yaml"
-          git commit -m "feat(vm): create VM '${{ inputs.vm_name }}' [machine=${{ inputs.machine_type }}, zone=${{ inputs.zone }}]"
+          git commit -m "feat(vm): create VM '${{ inputs.vm_name }}' [machine=${{ inputs.machine_type }}, zone=${{ inputs.zone }}, spot=${{ inputs.spot }}]"
           git push

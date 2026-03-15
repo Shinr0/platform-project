@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Shinr0/platform-engineering.git
+    repoURL: https://github.com/Shinr0/platform-project.git
     targetRevision: main
     path: crossplane/claims
     directory:

@@ -43,6 +43,18 @@ spec:
                       type: string
                       description: "OS image family (e.g. debian-12, ubuntu-2204-lts)"
                       default: debian-12
+                    spot:
+                      type: boolean
+                      description: Use a Spot/Preemptible VM (cheaper, can be terminated by GCP)
+                      default: false
+                    staticIp:
+                      type: boolean
+                      description: Attach a static external IP address
+                      default: false
+                    dataDiskSizeGb:
+                      type: integer
+                      description: "Additional data disk size in GB (0 = no extra disk)"
+                      default: 0
                   required:
                     - vmName
               required:
