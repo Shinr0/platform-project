@@ -1,0 +1,15 @@
+apiVersion: compute.platform.local/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: platform-test
+  namespace: default
+  labels:
+    managed-by: platform-eng
+    created-by: github-actions
+spec:
+  parameters:
+    vmName: platform-test
+    machineType: e2-micro
+    zone: europe-west1-b
+    diskSizeGb: 50
+    imageFamily: debian-12
