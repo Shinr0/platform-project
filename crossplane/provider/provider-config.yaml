@@ -3,7 +3,7 @@ kind: ProviderConfig
 metadata:
   name: default
 spec:
-  projectID: k-ops-sandbox
+  projectID: REPLACE_ME
   credentials:
     source: Secret
     secretRef:

@@ -34,12 +34,15 @@ Frontend (HTML/JS)
 ### 1. Cloner le repo et configurer les credentials GCP
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/platform-engineering.git
-cd platform-engineering
+git clone https://github.com/Shinr0/platform-project.git
+cd platform-project
 
-# Le script attend le fichier de credentials GCP ici par défaut :
-export GCP_CREDS_FILE="$HOME/k-ops-sandbox-66681f699c2c.json"
-export GCP_PROJECT_ID="k-ops-sandbox"
+# Generer les credentials GCP via ADC :
+gcloud auth application-default login
+# Le script utilise par defaut ~/.config/gcloud/application_default_credentials.json
+
+# Optionnel : forcer le project ID
+export GCP_PROJECT_ID="your-gcp-project-id"
 ```
 
 ### 2. Lancer le setup complet
