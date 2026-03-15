@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Engineering - Presentation Technique</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0b10;
+            --surface: #12141d;
+            --surface-2: #1a1d2b;
+            --border: #252838;
+            --primary: #6c63ff;
+            --primary-glow: rgba(108,99,255,0.15);
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --text: #e8eaed;
+            --text-muted: #7c8298;
+            --font-body: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            background: rgba(10,11,16,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        .nav-brand {
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-brand span { color: var(--primary); }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); background: var(--surface-2); }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+        .hero h1 span { color: var(--primary); }
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .hero-tags {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero-tag {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 8px 18px;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .hero-tag strong { color: var(--text); }
+
+        /* SECTIONS */
+        section { padding: 100px 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 16px;
+        }
+        .section-desc {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            max-width: 650px;
+            margin-bottom: 48px;
+        }
+
+        /* ARCHITECTURE DIAGRAM */
+        .arch-flow {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: auto;
+            padding: 24px 0;
+        }
+        .arch-step {
+            flex: 1;
+            min-width: 170px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 18px;
+            text-align: center;
+            position: relative;
+        }
+        .arch-step .step-num {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .arch-step .step-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .arch-step h4 { font-size: 0.95rem; margin-bottom: 6px; }
+        .arch-step p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+        .arch-arrow {
+            display: flex;
+            align-items: center;
+            padding: 0 6px;
+            color: var(--primary);
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        /* TECH STACK GRID */
+        .stack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .stack-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 24px;
+            transition: border-color 0.3s;
+        }
+        .stack-card:hover { border-color: var(--primary); }
+        .stack-card .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        .stack-card h4 { font-size: 1.05rem; margin-bottom: 8px; }
+        .stack-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+        .icon-k8s { background: rgba(49,108,244,0.15); color: #326ce5; }
+        .icon-crossplane { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+        .icon-argocd { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+        .icon-gha { background: rgba(108,99,255,0.15); color: var(--primary); }
+        .icon-gcp { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .icon-fe { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+
+        /* FEATURES */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 24px;
+        }
+        .feature-card h4 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .feature-card p { font-size: 0.88rem; color: var(--text-muted); }
+        .feature-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-green { background: var(--accent-green); }
+        .dot-blue { background: var(--accent-blue); }
+        .dot-orange { background: var(--accent-orange); }
+
+        /* CODE BLOCKS */
+        .code-block {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 24px 0;
+        }
+        .code-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .code-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .code-body {
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            line-height: 1.8;
+            overflow-x: auto;
+            color: #b8bdd4;
+        }
+        .code-body .kw { color: var(--primary); }
+        .code-body .str { color: var(--accent-green); }
+        .code-body .cmt { color: #4a5068; }
+        .code-body .num { color: var(--accent-orange); }
+
+        /* FLOW DIAGRAM */
+        .flow-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 40px 32px;
+        }
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .flow-row:last-child { margin-bottom: 0; }
+        .flow-box {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .flow-arrow { color: var(--primary); font-size: 1.2rem; flex-shrink: 0; }
+        .flow-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        /* CROSSPLANE API */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .api-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+        .api-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .api-table tr:last-child td { border-bottom: none; }
+        .api-table code {
+            font-family: var(--font-mono);
+            background: var(--surface-2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.82rem;
+            color: var(--primary);
+        }
+        .api-badge {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-required { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+        .badge-optional { background: rgba(108,99,255,0.1); color: var(--text-muted); }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        footer a { color: var(--primary); text-decoration: none; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .arch-flow { flex-direction: column; align-items: center; }
+            .arch-arrow { transform: rotate(90deg); }
+            .flow-row { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-inner">
+        <div class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#6c63ff" fill-opacity="0.2"/><path d="M8 12L16 7L24 12V20L16 25L8 20V12Z" stroke="#6c63ff" stroke-width="1.5" fill="none"/><circle cx="16" cy="16" r="3" fill="#6c63ff"/></svg>
+            Platform <span>Engineering</span>
+        </div>
+        <div class="nav-links">
+            <a href="#architecture">Architecture</a>
+            <a href="#stack">Stack</a>
+            <a href="#flow">Flow</a>
+            <a href="#api">API</a>
+            <a href="#features">Features</a>
+            <a href="https://github.com/Shinr0/platform-project" target="_blank">GitHub</a>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+    <div>
+        <h1>Internal Developer<br><span>Platform</span></h1>
+        <p>Self-service infrastructure provisioning sur GCP via Kubernetes, Crossplane et GitOps. Un clic, une VM.</p>
+        <div class="hero-tags">
+            <span class="hero-tag"><strong>Kubernetes</strong> (Kind)</span>
+            <span class="hero-tag"><strong>Crossplane</strong> API Controller</span>
+            <span class="hero-tag"><strong>ArgoCD</strong> GitOps</span>
+            <span class="hero-tag"><strong>GitHub Actions</strong> CI/CD</span>
+            <span class="hero-tag"><strong>GCP</strong> Compute Engine</span>
+        </div>
+    </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+    <div class="container">
+        <div class="section-label">01 / Architecture</div>
+        <h2 class="section-title">Vue d'ensemble</h2>
+        <p class="section-desc">
+            L'utilisateur interagit avec un portail web. Chaque action declenche un workflow GitOps
+            qui aboutit a la creation de ressources reelles sur GCP, sans jamais toucher directement au cloud.
+        </p>
+        <div class="arch-flow">
+            <div class="arch-step">
+                <div class="step-num">01</div>
+                <div class="step-icon">🖥️</div>
+                <h4>Frontend</h4>
+                <p>Portail developpeur<br>HTML / JS vanilla</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+                <div class="step-num">02</div>
+                <div class="step-icon">⚡</div>
+                <h4>GitHub Actions</h4>
+                <p>Genere le manifest<br>Crossplane Claim</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+                <div class="step-num">03</div>
+                <div class="step-icon">📦</div>
+                <h4>Git Repository</h4>
+                <p>Source of truth<br>crossplane/claims/</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+                <div class="step-num">04</div>
+                <div class="step-icon">🔄</div>
+                <h4>ArgoCD</h4>
+                <p>Sync automatique<br>vers le cluster K8s</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+                <div class="step-num">05</div>
+                <div class="step-icon">☸️</div>
+                <h4>Crossplane</h4>
+                <p>Reconcile le Claim<br>via l'API GCP</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+                <div class="step-num">06</div>
+                <div class="step-icon">☁️</div>
+                <h4>GCP</h4>
+                <p>Compute Engine<br>VM creee</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="stack" style="background: var(--surface)">
+    <div class="container">
+        <div class="section-label">02 / Stack technique</div>
+        <h2 class="section-title">Technologies</h2>
+        <p class="section-desc">
+            Chaque composant a un role precis dans la chaine de provisioning. Aucun acces direct au cloud
+            n'est necessaire pour les utilisateurs.
+        </p>
+        <div class="stack-grid">
+            <div class="stack-card">
+                <div class="card-icon icon-k8s">K8s</div>
+                <h4>Kubernetes (Kind)</h4>
+                <p>Cluster local servant de control plane. Heberge Crossplane et ArgoCD.
+                   Toute la logique d'orchestration passe par l'API Kubernetes.</p>
+            </div>
+            <div class="stack-card">
+                <div class="card-icon icon-crossplane">XP</div>
+                <h4>Crossplane</h4>
+                <p>Transforme Kubernetes en control plane cloud universel. Definit des APIs custom
+                   (XRD) qui mappent vers des ressources GCP reelles via des Compositions.</p>
+            </div>
+            <div class="stack-card">
+                <div class="card-icon icon-argocd">CD</div>
+                <h4>ArgoCD</h4>
+                <p>Operateur GitOps. Surveille le dossier <code>crossplane/claims/</code> du repo Git
+                   et synchronise automatiquement tout changement vers le cluster.</p>
+            </div>
+            <div class="stack-card">
+                <div class="card-icon icon-gha">CI</div>
+                <h4>GitHub Actions</h4>
+                <p>Genere les manifests Crossplane (Claims YAML) a partir des inputs utilisateur
+                   et les commit dans le repo. Declenchement via <code>workflow_dispatch</code>.</p>
+            </div>
+            <div class="stack-card">
+                <div class="card-icon icon-gcp">GCP</div>
+                <h4>Google Cloud Platform</h4>
+                <p>Cloud cible. Le provider Upbound Crossplane communique avec l'API GCP
+                   pour creer/supprimer les ressources (Compute Engine, Disk, Address).</p>
+            </div>
+            <div class="stack-card">
+                <div class="card-icon icon-fe">UI</div>
+                <h4>Frontend Portal</h4>
+                <p>Interface web statique (HTML/CSS/JS). Formulaire de creation de VM qui
+                   trigger le workflow GitHub Actions via l'API REST.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow">
+    <div class="container">
+        <div class="section-label">03 / GitOps Flow</div>
+        <h2 class="section-title">Cycle de vie d'une VM</h2>
+        <p class="section-desc">
+            De la demande utilisateur a la VM running sur GCP, chaque etape est tracable,
+            reversible et auditee via Git.
+        </p>
+
+        <h3 style="font-size:1.1rem; margin-bottom:20px; color:var(--accent-green)">Creation</h3>
+        <div class="flow-container" style="margin-bottom:32px">
+            <div class="flow-row">
+                <div class="flow-box">Developer Portal</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">workflow_dispatch</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">GitHub Actions</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">git commit</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">claims/my-vm.yaml</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-box">ArgoCD</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">kubectl apply</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">Crossplane Claim</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">GCP API</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box" style="border-color:var(--accent-green)">VM Running</div>
+            </div>
+        </div>
+
+        <h3 style="font-size:1.1rem; margin-bottom:20px; color:var(--accent-red)">Suppression</h3>
+        <div class="flow-container">
+            <div class="flow-row">
+                <div class="flow-box">Developer Portal</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">workflow_dispatch</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">GitHub Actions</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">git rm</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box" style="text-decoration:line-through; opacity:0.5">claims/my-vm.yaml</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-box">ArgoCD</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">prune</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">Claim deleted</div>
+                <span class="flow-arrow">→</span>
+                <span class="flow-label">GCP API</span>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box" style="border-color:var(--accent-red)">VM Destroyed</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- API CROSSPLANE -->
+<section id="api" style="background: var(--surface)">
+    <div class="container">
+        <div class="section-label">04 / Crossplane API</div>
+        <h2 class="section-title">Custom Resource Definition</h2>
+        <p class="section-desc">
+            Crossplane expose une API Kubernetes custom <code>VirtualMachine</code> qui abstrait
+            la complexite GCP derriere une interface simple et declarative.
+        </p>
+
+        <div class="code-block">
+            <div class="code-header">
+                <div class="dot" style="background:#ef4444"></div>
+                <div class="dot" style="background:#f59e0b"></div>
+                <div class="dot" style="background:#10b981"></div>
+                claim-example.yaml
+            </div>
+            <div class="code-body">
+<span class="kw">apiVersion</span>: compute.platform.local/v1alpha1
+<span class="kw">kind</span>: VirtualMachine
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: <span class="str">my-dev-server</span>
+  <span class="kw">namespace</span>: default
+<span class="kw">spec</span>:
+  <span class="kw">parameters</span>:
+    <span class="kw">vmName</span>: <span class="str">my-dev-server</span>
+    <span class="kw">machineType</span>: <span class="str">e2-small</span>       <span class="cmt"># default: e2-micro</span>
+    <span class="kw">zone</span>: <span class="str">europe-west1-b</span>
+    <span class="kw">diskSizeGb</span>: <span class="num">30</span>              <span class="cmt"># default: 20</span>
+    <span class="kw">imageFamily</span>: <span class="str">debian-12</span>
+    <span class="kw">spot</span>: <span class="num">true</span>                  <span class="cmt"># VM preemptible (cheaper)</span>
+    <span class="kw">staticIp</span>: <span class="num">true</span>              <span class="cmt"># external static IP</span>
+    <span class="kw">dataDiskSizeGb</span>: <span class="num">100</span>         <span class="cmt"># additional data disk</span>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+        <table class="api-table" style="background:var(--bg); border-radius:12px; overflow:hidden; border:1px solid var(--border)">
+            <thead>
+                <tr>
+                    <th>Parametre</th>
+                    <th>Type</th>
+                    <th>Defaut</th>
+                    <th>Description</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>vmName</code></td>
+                    <td>string</td>
+                    <td>-</td>
+                    <td>Nom de l'instance Compute Engine</td>
+                    <td><span class="api-badge badge-required">requis</span></td>
+                </tr>
+                <tr>
+                    <td><code>machineType</code></td>
+                    <td>string</td>
+                    <td><code>e2-micro</code></td>
+                    <td>Type de machine GCP</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>zone</code></td>
+                    <td>string</td>
+                    <td><code>europe-west1-b</code></td>
+                    <td>Zone GCP de deploiement</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>diskSizeGb</code></td>
+                    <td>integer</td>
+                    <td><code>20</code></td>
+                    <td>Taille du disque de boot (GB)</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>imageFamily</code></td>
+                    <td>string</td>
+                    <td><code>debian-12</code></td>
+                    <td>Famille d'image OS</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>spot</code></td>
+                    <td>boolean</td>
+                    <td><code>false</code></td>
+                    <td>VM Spot/Preemptible (moins cher, terminable par GCP)</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>staticIp</code></td>
+                    <td>boolean</td>
+                    <td><code>false</code></td>
+                    <td>Attacher une IP externe statique</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+                <tr>
+                    <td><code>dataDiskSizeGb</code></td>
+                    <td>integer</td>
+                    <td><code>0</code></td>
+                    <td>Disque de donnees supplementaire (0 = aucun)</td>
+                    <td><span class="api-badge badge-optional">optionnel</span></td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+    <div class="container">
+        <div class="section-label">05 / Features</div>
+        <h2 class="section-title">Capacites de la plateforme</h2>
+        <p class="section-desc">
+            Ce que la plateforme permet aujourd'hui et les principes architecturaux qui la gouvernent.
+        </p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-green"></span> Self-service provisioning</h4>
+                <p>Les developpeurs creent et suppriment des VMs sans intervention Ops,
+                   via un portail web ou directement depuis GitHub Actions.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-green"></span> GitOps natif</h4>
+                <p>L'etat desire de l'infrastructure est versionne dans Git. Chaque changement
+                   est tracable, auditable et reversible via un simple <code>git revert</code>.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-green"></span> Reconciliation continue</h4>
+                <p>Crossplane surveille en permanence l'etat reel sur GCP et le reconcilie
+                   avec l'etat declare dans Kubernetes. Un drift est automatiquement corrige.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-blue"></span> VM Spot / Preemptible</h4>
+                <p>Option pour provisionner des VMs preemptibles a cout reduit,
+                   ideales pour les workloads tolerants aux interruptions.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-blue"></span> IP statique</h4>
+                <p>Reservation automatique d'une adresse IP externe statique
+                   quand l'option est activee, avec derivation auto de la region depuis la zone.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-blue"></span> Disque supplementaire</h4>
+                <p>Ajout optionnel d'un disque de donnees pd-standard,
+                   provisionne et attache automatiquement a l'instance.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-orange"></span> Abstraction via XRD</h4>
+                <p>Les utilisateurs ne manipulent qu'une API simple (<code>VirtualMachine</code>).
+                   La complexite GCP (Instance, Disk, Address) est masquee par la Composition.</p>
+            </div>
+            <div class="feature-card">
+                <h4><span class="feature-dot dot-orange"></span> Idempotent et reproductible</h4>
+                <p>Le setup complet (cluster, Crossplane, ArgoCD, providers) est automatise
+                   via un script idempotent. Reproductible en quelques minutes.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STRUCTURE -->
+<section style="background: var(--surface)">
+    <div class="container">
+        <div class="section-label">06 / Structure</div>
+        <h2 class="section-title">Organisation du projet</h2>
+        <div class="code-block" style="max-width:600px">
+            <div class="code-header">
+                <div class="dot" style="background:#ef4444"></div>
+                <div class="dot" style="background:#f59e0b"></div>
+                <div class="dot" style="background:#10b981"></div>
+                platform-project/
+            </div>
+            <div class="code-body">
+<span class="str">.github/workflows/</span>
+  create-vm.yml              <span class="cmt"># Workflow creation VM</span>
+  delete-vm.yml              <span class="cmt"># Workflow suppression VM</span>
+
+<span class="str">crossplane/</span>
+  <span class="str">provider/</span>
+    provider-gcp-compute.yaml  <span class="cmt"># Provider Upbound GCP</span>
+    provider-config.yaml       <span class="cmt"># Credentials GCP</span>
+    function-patch-and-transform.yaml
+  <span class="str">compositions/</span>
+    xrd-vm.yaml                <span class="cmt"># API custom (XRD)</span>
+    composition-vm.yaml        <span class="cmt"># Mapping → GCP resources</span>
+  <span class="str">claims/</span>                      <span class="cmt"># GitOps dir (ArgoCD)</span>
+
+<span class="str">argocd/</span>
+  application-claims.yaml      <span class="cmt"># ArgoCD Application</span>
+
+<span class="str">frontend/</span>
+  index.html                   <span class="cmt"># Developer Portal</span>
+
+<span class="str">scripts/</span>
+  setup.sh                     <span class="cmt"># Setup complet</span>
+
+<span class="str">docs/</span>
+  index.html                   <span class="cmt"># Cette presentation</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>
+            Platform Engineering POC &mdash; Romain Capelle &mdash;
+            <a href="https://github.com/Shinr0/platform-project" target="_blank">github.com/Shinr0/platform-project</a>
+        </p>
+        <p style="margin-top:8px; font-size:0.8rem">
+            Veille technologique &mdash; Kubernetes &middot; Crossplane &middot; ArgoCD &middot; GitHub Actions &middot; GCP
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>
