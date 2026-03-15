@@ -1,0 +1,61 @@
+name: Deploy Pages (Docs + Slides)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - slides/**
+      - .github/workflows/deploy-pages.yml
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Slidev dependencies
+        working-directory: slides
+        run: npm install
+
+      - name: Build Slidev slides
+        working-directory: slides
+        run: npx slidev build --base /platform-project/slides/ --out dist
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/slides
+          cp docs/index.html _site/index.html
+          cp -r slides/dist/* _site/slides/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
