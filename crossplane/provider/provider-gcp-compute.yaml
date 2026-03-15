@@ -4,5 +4,3 @@ metadata:
   name: upbound-provider-gcp-compute
 spec:
   package: xpkg.upbound.io/upbound/provider-gcp-compute:v1.8.2
-  controllerConfigRef:
-    name: upbound-provider-gcp-compute

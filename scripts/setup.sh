@@ -4,8 +4,8 @@ set -euo pipefail
 CLUSTER_NAME="platform-eng"
 CROSSPLANE_NAMESPACE="crossplane-system"
 ARGOCD_NAMESPACE="argocd"
-GCP_CREDS_FILE="${GCP_CREDS_FILE:-$HOME/k-ops-sandbox-66681f699c2c.json}"
-GCP_PROJECT_ID="${GCP_PROJECT_ID:-k-ops-sandbox}"
+GCP_CREDS_FILE="${GCP_CREDS_FILE:-$HOME/.config/gcloud/application_default_credentials.json}"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,9 +28,19 @@ check_prerequisites() {
         err "Missing tools: ${missing[*]}. Install them first."
     fi
     if [[ ! -f "$GCP_CREDS_FILE" ]]; then
-        err "GCP credentials file not found: $GCP_CREDS_FILE"
+        err "GCP credentials file not found: $GCP_CREDS_FILE\n  Run: gcloud auth application-default login"
     fi
-    log "All prerequisites met."
+    if [[ -z "$GCP_PROJECT_ID" ]]; then
+        GCP_PROJECT_ID=$(python3 -c "import json; print(json.load(open('$GCP_CREDS_FILE')).get('project_id',''))" 2>/dev/null) || true
+        if [[ -z "$GCP_PROJECT_ID" ]] && command_exists gcloud; then
+            GCP_PROJECT_ID=$(gcloud config get-value project 2>/dev/null) || true
+        fi
+        if [[ -z "$GCP_PROJECT_ID" ]]; then
+            err "GCP_PROJECT_ID not set. Pass it via: GCP_PROJECT_ID=my-project ./setup.sh"
+        fi
+        log "Auto-detected GCP project: $GCP_PROJECT_ID"
+    fi
+    log "All prerequisites met. (project=$GCP_PROJECT_ID)"
 }
 
 create_kind_cluster() {
@@ -79,8 +89,10 @@ install_gcp_provider() {
         -n "$CROSSPLANE_NAMESPACE" \
         --dry-run=client -o yaml | kubectl apply -f -
 
-    log "Applying ProviderConfig..."
-    kubectl apply -f "$(dirname "$0")/../crossplane/provider/provider-config.yaml"
+    log "Applying ProviderConfig (project=$GCP_PROJECT_ID)..."
+    sed "s/projectID: .*/projectID: ${GCP_PROJECT_ID}/" \
+        "$(dirname "$0")/../crossplane/provider/provider-config.yaml" \
+        | kubectl apply -f -
     log "GCP provider configured."
 }
 
