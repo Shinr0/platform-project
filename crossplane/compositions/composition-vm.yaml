@@ -23,6 +23,9 @@ spec:
             base:
               apiVersion: compute.gcp.upbound.io/v1beta1
               kind: Instance
+              metadata:
+                labels:
+                  resource: compute-instance
               spec:
                 forProvider:
                   zone: europe-west1-b
@@ -130,6 +133,9 @@ spec:
             base:
               apiVersion: compute.gcp.upbound.io/v1beta1
               kind: Disk
+              metadata:
+                labels:
+                  resource: data-disk
               spec:
                 forProvider:
                   zone: europe-west1-b
@@ -160,3 +166,37 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.parameters.dataDiskSizeGb
                 toFieldPath: spec.forProvider.size
+
+          - name: attach-data-disk
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta1
+              kind: AttachedDisk
+              spec:
+                forProvider:
+                  instanceSelector:
+                    matchControllerRef: true
+                    matchLabels:
+                      resource: compute-instance
+                  diskSelector:
+                    matchControllerRef: true
+                    matchLabels:
+                      resource: data-disk
+                providerConfigRef:
+                  name: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.vmName
+                toFieldPath: metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-attach-data"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.vmName
+                toFieldPath: metadata.annotations[crossplane.io/external-name]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-attach-data"

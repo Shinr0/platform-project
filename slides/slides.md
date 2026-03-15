@@ -32,11 +32,10 @@ layoutClass: gap-8
 
 <v-clicks>
 
-- Les devs **attendent les Ops** pour avoir une VM
-- Tickets, process manuels, delais
-- Pas de standardisation des environnements
-- Zero visibilite sur ce qui tourne
-- Cout non maitrise
+- Charge cognitive importante pour les équipes produits
+- Documentation de module Terraform complexe
+- Temps d'apply important quand le projet grandit
+- Gestion du state compliqué
 
 </v-clicks>
 
@@ -51,6 +50,7 @@ layoutClass: gap-8
 - **API Kubernetes** comme interface unique
 - **Reconciliation** continue (drift auto-corrige)
 - **Abstraction** de la complexite cloud
+- **Documentation** intégré dans l'interface
 
 </v-clicks>
 

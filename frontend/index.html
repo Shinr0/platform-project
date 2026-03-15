@@ -138,22 +138,69 @@
         .toast.error { background: var(--danger); }
         .toast.info { background: var(--primary); }
 
-        .vm-list { display: flex; flex-direction: column; gap: 8px; }
-        .vm-item {
+        .vm-list { display: flex; flex-direction: column; gap: 10px; }
+        .vm-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .vm-card:hover { border-color: var(--primary); }
+        .vm-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 14px 16px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            transition: border-color 0.2s;
+            cursor: pointer;
         }
-        .vm-item:hover { border-color: var(--primary); }
         .vm-info { display: flex; flex-direction: column; gap: 4px; }
-        .vm-name { font-weight: 600; font-size: 0.95rem; }
-        .vm-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 16px; }
+        .vm-name { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+        .vm-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
         .vm-actions { display: flex; gap: 8px; }
+        .vm-detail {
+            display: none;
+            padding: 0 16px 16px;
+            border-top: 1px solid var(--border);
+        }
+        .vm-detail.open { display: block; }
+        .vm-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .detail-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
+        .detail-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .detail-value { font-size: 0.92rem; font-weight: 600; }
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+        .badge-sm {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .badge-spot { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .badge-ip { background: rgba(108,99,255,0.15); color: var(--primary); }
+        .badge-disk { background: rgba(39,174,96,0.15); color: var(--success); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--text); }
+        .chevron { transition: transform 0.2s; display: inline-block; color: var(--text-muted); }
+        .chevron.open { transform: rotate(90deg); }
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -195,7 +242,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 24px;
-            width: 420px;
+            width: 520px;
             max-width: 90vw;
         }
         .modal h3 { margin-bottom: 16px; }
@@ -351,11 +398,67 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3>Edit VM <span id="editVmTitle" style="color:var(--primary)"></span></h3>
+        <form id="editVmForm" onsubmit="return handleEditVm(event)">
+            <input type="hidden" id="editVmName">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="editMachineType">Machine Type</label>
+                    <select id="editMachineType">
+                        <option value="e2-micro">e2-micro (2 vCPU, 1 GB)</option>
+                        <option value="e2-small">e2-small (2 vCPU, 2 GB)</option>
+                        <option value="e2-medium">e2-medium (2 vCPU, 4 GB)</option>
+                        <option value="n1-standard-1">n1-standard-1 (1 vCPU, 3.75 GB)</option>
+                        <option value="n1-standard-2">n1-standard-2 (2 vCPU, 7.5 GB)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editZone">Zone</label>
+                    <select id="editZone">
+                        <option value="europe-west1-b">europe-west1-b</option>
+                        <option value="europe-west1-c">europe-west1-c</option>
+                        <option value="europe-west1-d">europe-west1-d</option>
+                        <option value="us-central1-a">us-central1-a</option>
+                        <option value="us-east1-b">us-east1-b</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editDiskSize">Boot Disk (GB)</label>
+                    <input type="number" id="editDiskSize" min="10" max="500">
+                </div>
+                <div class="form-group">
+                    <label for="editDataDisk">Data Disk (GB) <span style="color:var(--text-muted);font-weight:400">0 = remove</span></label>
+                    <input type="number" id="editDataDisk" min="0" max="500">
+                </div>
+                <div class="form-group" style="display:flex;gap:24px;align-items:center;padding-top:22px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="editSpot" style="width:18px;height:18px;accent-color:var(--primary)">
+                        Spot VM
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" id="editStaticIp" style="width:18px;height:18px;accent-color:var(--primary)">
+                        Static IP
+                    </label>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="editBtn">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const WORKFLOW_CREATE = 'create-vm.yml';
 const WORKFLOW_DELETE = 'delete-vm.yml';
+const WORKFLOW_UPDATE = 'update-vm.yml';
+
+let vmDataCache = {};
 
 function getConfig() {
     return {
@@ -488,6 +591,96 @@ async function deleteVm(vmName) {
     }
 }
 
+function parseVmYaml(yamlText) {
+    const get = (key) => { const m = yamlText.match(new RegExp(key + ':\\s*(\\S+)')); return m ? m[1] : ''; };
+    return {
+        machineType: get('machineType') || 'e2-micro',
+        zone: get('zone') || 'europe-west1-b',
+        diskSizeGb: get('diskSizeGb') || '20',
+        imageFamily: get('imageFamily') || 'debian-12',
+        spot: get('spot') === 'true',
+        staticIp: get('staticIp') === 'true',
+        dataDiskSizeGb: parseInt(get('dataDiskSizeGb') || '0', 10),
+    };
+}
+
+function toggleDetail(name) {
+    const el = document.getElementById(`detail-${name}`);
+    const chev = document.getElementById(`chev-${name}`);
+    if (el) { el.classList.toggle('open'); chev?.classList.toggle('open'); }
+}
+
+function openEditModal(name) {
+    const vm = vmDataCache[name];
+    if (!vm) return;
+    document.getElementById('editVmName').value = name;
+    document.getElementById('editVmTitle').textContent = name;
+    document.getElementById('editMachineType').value = vm.machineType;
+    document.getElementById('editZone').value = vm.zone;
+    document.getElementById('editDiskSize').value = vm.diskSizeGb;
+    document.getElementById('editDataDisk').value = vm.dataDiskSizeGb;
+    document.getElementById('editSpot').checked = vm.spot;
+    document.getElementById('editStaticIp').checked = vm.staticIp;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+}
+
+async function handleEditVm(e) {
+    e.preventDefault();
+    const btn = document.getElementById('editBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving...';
+    setLoading(true);
+    try {
+        await triggerWorkflow(WORKFLOW_UPDATE, {
+            vm_name: document.getElementById('editVmName').value,
+            machine_type: document.getElementById('editMachineType').value,
+            zone: document.getElementById('editZone').value,
+            disk_size_gb: document.getElementById('editDiskSize').value,
+            spot: document.getElementById('editSpot').checked,
+            static_ip: document.getElementById('editStaticIp').checked,
+            data_disk_size_gb: document.getElementById('editDataDisk').value,
+        });
+        showToast('VM update triggered! ArgoCD will sync shortly.', 'success');
+        closeEditModal();
+        setTimeout(() => { loadRuns(); loadVMs(); }, 3000);
+    } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Save Changes';
+        setLoading(false);
+    }
+    return false;
+}
+
+async function quickRemoveDisk(name) {
+    if (!confirm(`Remove data disk from "${name}"?`)) return;
+    const vm = vmDataCache[name];
+    if (!vm) return;
+    setLoading(true);
+    try {
+        await triggerWorkflow(WORKFLOW_UPDATE, {
+            vm_name: name,
+            machine_type: vm.machineType,
+            zone: vm.zone,
+            disk_size_gb: vm.diskSizeGb,
+            spot: vm.spot,
+            static_ip: vm.staticIp,
+            data_disk_size_gb: '0',
+        });
+        showToast(`Data disk removal triggered for "${name}".`, 'success');
+        setTimeout(() => { loadRuns(); loadVMs(); }, 3000);
+    } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
 async function loadVMs() {
     const { repo, token } = getConfig();
     const container = document.getElementById('vmList');
@@ -511,29 +704,74 @@ async function loadVMs() {
 
         const vmsHtml = await Promise.all(claims.map(async (file) => {
             const name = file.name.replace('.yaml', '');
-            let meta = '';
+            let vm = { machineType:'e2-micro', zone:'', diskSizeGb:'20', imageFamily:'debian-12', spot:false, staticIp:false, dataDiskSizeGb:0 };
             try {
                 const contentResp = await fetch(file.download_url, { headers: ghHeaders() });
-                const yamlText = await contentResp.text();
-                const machineMatch = yamlText.match(/machineType:\s*(\S+)/);
-                const zoneMatch = yamlText.match(/zone:\s*(\S+)/);
-                const spotMatch = yamlText.match(/spot:\s*(true)/);
-                const ipMatch = yamlText.match(/staticIp:\s*(true)/);
-                const diskMatch = yamlText.match(/dataDiskSizeGb:\s*(\d+)/);
-                if (machineMatch) meta += machineMatch[1];
-                if (zoneMatch) meta += ` &middot; ${zoneMatch[1]}`;
-                if (spotMatch) meta += ' &middot; Spot';
-                if (ipMatch) meta += ' &middot; Static IP';
-                if (diskMatch && diskMatch[1] !== '0') meta += ` &middot; +${diskMatch[1]}GB data`;
+                vm = parseVmYaml(await contentResp.text());
             } catch { /* ignore */ }
+            vmDataCache[name] = vm;
+
+            const badges = [];
+            if (vm.spot) badges.push('<span class="badge-sm badge-spot">Spot</span>');
+            if (vm.staticIp) badges.push('<span class="badge-sm badge-ip">Static IP</span>');
+            if (vm.dataDiskSizeGb > 0) badges.push(`<span class="badge-sm badge-disk">+${vm.dataDiskSizeGb}GB data</span>`);
+
+            const diskActions = vm.dataDiskSizeGb > 0
+                ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();quickRemoveDisk('${name}')">Remove Data Disk</button>`
+                : '';
+
             return `
-                <div class="vm-item">
-                    <div class="vm-info">
-                        <span class="vm-name">${name}</span>
-                        <span class="vm-meta">${meta || 'Compute Engine'}</span>
+                <div class="vm-card">
+                    <div class="vm-header" onclick="toggleDetail('${name}')">
+                        <div class="vm-info">
+                            <span class="vm-name">
+                                <span class="chevron" id="chev-${name}">&#9654;</span>
+                                ${name}
+                                ${badges.join(' ')}
+                            </span>
+                            <span class="vm-meta">${vm.machineType} &middot; ${vm.zone} &middot; ${vm.diskSizeGb}GB boot &middot; ${vm.imageFamily}</span>
+                        </div>
+                        <div class="vm-actions" onclick="event.stopPropagation()">
+                            <button class="btn btn-outline btn-sm" onclick="openEditModal('${name}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteVm('${name}')">Delete</button>
+                        </div>
                     </div>
-                    <div class="vm-actions">
-                        <button class="btn btn-danger btn-sm" onclick="deleteVm('${name}')">Delete</button>
+                    <div class="vm-detail" id="detail-${name}">
+                        <div class="vm-detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Machine Type</div>
+                                <div class="detail-value">${vm.machineType}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Zone</div>
+                                <div class="detail-value">${vm.zone}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Boot Disk</div>
+                                <div class="detail-value">${vm.diskSizeGb} GB</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">OS Image</div>
+                                <div class="detail-value">${vm.imageFamily}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Spot VM</div>
+                                <div class="detail-value">${vm.spot ? 'Yes' : 'No'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Static IP</div>
+                                <div class="detail-value">${vm.staticIp ? 'Yes' : 'No'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Data Disk</div>
+                                <div class="detail-value">${vm.dataDiskSizeGb > 0 ? vm.dataDiskSizeGb + ' GB' : 'None'}</div>
+                            </div>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn btn-outline btn-sm" onclick="openEditModal('${name}')">Edit Configuration</button>
+                            ${diskActions}
+                            <button class="btn btn-danger btn-sm" onclick="deleteVm('${name}')">Destroy VM</button>
+                        </div>
                     </div>
                 </div>`;
         }));
@@ -593,6 +831,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.getElementById('settingsModal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeSettings();
+});
+document.getElementById('editModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeEditModal();
 });
 </script>
 

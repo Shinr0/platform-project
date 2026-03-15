@@ -1,0 +1,102 @@
+name: Update GCP VM via Crossplane
+
+on:
+  workflow_dispatch:
+    inputs:
+      vm_name:
+        description: "VM name to update (must already exist)"
+        required: true
+        type: string
+      machine_type:
+        description: "GCP machine type"
+        required: true
+        type: choice
+        default: "e2-micro"
+        options:
+          - e2-micro
+          - e2-small
+          - e2-medium
+          - n1-standard-1
+          - n1-standard-2
+      zone:
+        description: "GCP zone"
+        required: true
+        type: choice
+        default: "europe-west1-b"
+        options:
+          - europe-west1-b
+          - europe-west1-c
+          - europe-west1-d
+          - us-central1-a
+          - us-east1-b
+      disk_size_gb:
+        description: "Boot disk size in GB"
+        required: false
+        type: number
+        default: 20
+      spot:
+        description: "Use Spot/Preemptible VM"
+        required: false
+        type: boolean
+        default: false
+      static_ip:
+        description: "Attach a static external IP"
+        required: false
+        type: boolean
+        default: false
+      data_disk_size_gb:
+        description: "Data disk size in GB (0 = remove disk)"
+        required: false
+        type: number
+        default: 0
+
+permissions:
+  contents: write
+
+jobs:
+  update-claim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify claim exists
+        run: |
+          if [[ ! -f "crossplane/claims/${{ inputs.vm_name }}.yaml" ]]; then
+            echo "::error::No VM claim found with name '${{ inputs.vm_name }}'."
+            exit 1
+          fi
+
+      - name: Update Crossplane Claim
+        run: |
+          cat > "crossplane/claims/${{ inputs.vm_name }}.yaml" <<'CLAIM_EOF'
+          apiVersion: compute.platform.local/v1alpha1
+          kind: VirtualMachine
+          metadata:
+            name: ${{ inputs.vm_name }}
+            namespace: default
+            labels:
+              managed-by: platform-eng
+              created-by: github-actions
+          spec:
+            parameters:
+              vmName: ${{ inputs.vm_name }}
+              machineType: ${{ inputs.machine_type }}
+              zone: ${{ inputs.zone }}
+              diskSizeGb: ${{ inputs.disk_size_gb }}
+              imageFamily: debian-12
+              spot: ${{ inputs.spot }}
+              staticIp: ${{ inputs.static_ip }}
+              dataDiskSizeGb: ${{ inputs.data_disk_size_gb }}
+          CLAIM_EOF
+
+          sed -i 's/^          //' "crossplane/claims/${{ inputs.vm_name }}.yaml"
+
+      - name: Commit and push update
+        run: |
+          git config user.name "platform-eng-bot"
+          git config user.email "platform-eng-bot@github.com"
+          git add "crossplane/claims/${{ inputs.vm_name }}.yaml"
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "feat(vm): update VM '${{ inputs.vm_name }}' [machine=${{ inputs.machine_type }}, disk_data=${{ inputs.data_disk_size_gb }}GB]"
+          git push
