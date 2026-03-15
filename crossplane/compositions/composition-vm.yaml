@@ -11,192 +11,105 @@ spec:
     kind: XVirtualMachine
   mode: Pipeline
   pipeline:
-    - step: patch-and-transform
+    - step: render-resources
       functionRef:
-        name: function-patch-and-transform
+        name: function-go-templating
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        kind: Resources
-        resources:
-
-          - name: compute-instance
-            base:
-              apiVersion: compute.gcp.upbound.io/v1beta1
-              kind: Instance
-              metadata:
-                labels:
-                  resource: compute-instance
-              spec:
-                forProvider:
-                  zone: europe-west1-b
-                  machineType: e2-micro
-                  bootDisk:
-                    - initializeParams:
-                        - image: projects/debian-cloud/global/images/family/debian-12
-                          size: 20
-                  networkInterface:
-                    - network: default
-                      accessConfig:
-                        - networkTier: STANDARD
-                  scheduling:
-                    - preemptible: false
-                      automaticRestart: true
-                  metadata:
-                    managed-by: crossplane-platform-eng
-                  tags:
-                    - platform-eng
-                providerConfigRef:
-                  name: default
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.name
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.machineType
-                toFieldPath: spec.forProvider.machineType
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.zone
-                toFieldPath: spec.forProvider.zone
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.diskSizeGb
-                toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].size
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                    - fromFieldPath: spec.parameters.imageFamily
-                  strategy: string
-                  string:
-                    fmt: "projects/debian-cloud/global/images/family/%s"
-                toFieldPath: spec.forProvider.bootDisk[0].initializeParams[0].image
-              # Spot VM scheduling
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.spot
-                toFieldPath: spec.forProvider.scheduling[0].preemptible
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.spot
-                toFieldPath: spec.forProvider.scheduling[0].automaticRestart
-                transforms:
-                  - type: convert
-                    convert:
-                      toType: string
-                  - type: map
-                    map:
-                      "true": "false"
-                      "false": "true"
-                  - type: convert
-                    convert:
-                      toType: bool
-
-          - name: static-ip
-            base:
-              apiVersion: compute.gcp.upbound.io/v1beta1
-              kind: Address
-              spec:
-                forProvider:
-                  region: europe-west1
-                  addressType: EXTERNAL
-                  networkTier: STANDARD
-                providerConfigRef:
-                  name: default
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-ip"
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-ip"
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.zone
-                toFieldPath: spec.forProvider.region
-                transforms:
-                  - type: string
-                    string:
-                      type: Regexp
-                      regexp:
-                        match: "^(.*)-[a-z]$"
-                        group: 1
-
-          - name: data-disk
-            base:
-              apiVersion: compute.gcp.upbound.io/v1beta1
-              kind: Disk
-              metadata:
-                labels:
-                  resource: data-disk
-              spec:
-                forProvider:
-                  zone: europe-west1-b
-                  size: 50
-                  type: pd-standard
-                providerConfigRef:
-                  name: default
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-data"
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-data"
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.zone
-                toFieldPath: spec.forProvider.zone
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.dataDiskSizeGb
-                toFieldPath: spec.forProvider.size
-
-          - name: attach-data-disk
-            base:
-              apiVersion: compute.gcp.upbound.io/v1beta1
-              kind: AttachedDisk
-              spec:
-                forProvider:
-                  instanceSelector:
-                    matchControllerRef: true
-                    matchLabels:
-                      resource: compute-instance
-                  diskSelector:
-                    matchControllerRef: true
-                    matchLabels:
-                      resource: data-disk
-                providerConfigRef:
-                  name: default
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.name
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-attach-data"
-              - type: FromCompositeFieldPath
-                fromFieldPath: spec.parameters.vmName
-                toFieldPath: metadata.annotations[crossplane.io/external-name]
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-attach-data"
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $params := .observed.composite.resource.spec.parameters }}
+            {{- $vmName := $params.vmName }}
+            {{- $zone := $params.zone | default "europe-west1-b" }}
+            {{- $machineType := $params.machineType | default "e2-micro" }}
+            {{- $diskSizeGb := $params.diskSizeGb | default 20 }}
+            {{- $imageFamily := $params.imageFamily | default "debian-12" }}
+            {{- $spot := $params.spot | default false }}
+            {{- $staticIp := $params.staticIp | default false }}
+            {{- $dataDiskSizeGb := $params.dataDiskSizeGb | default 0 }}
+            {{- $region := regexReplaceAll "-[a-z]$" $zone "" }}
+            ---
+            apiVersion: compute.gcp.upbound.io/v1beta1
+            kind: Instance
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $vmName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: compute-instance
+              labels:
+                resource: compute-instance
+            spec:
+              forProvider:
+                zone: {{ $zone }}
+                machineType: {{ $machineType }}
+                bootDisk:
+                  - initializeParams:
+                      - image: projects/debian-cloud/global/images/family/{{ $imageFamily }}
+                        size: {{ $diskSizeGb }}
+                networkInterface:
+                  - network: default
+                    accessConfig:
+                      - networkTier: STANDARD
+                scheduling:
+                  - preemptible: {{ $spot }}
+                    automaticRestart: {{ not $spot }}
+                metadata:
+                  managed-by: crossplane-platform-eng
+                tags:
+                  - platform-eng
+              providerConfigRef:
+                name: default
+            {{- if $staticIp }}
+            ---
+            apiVersion: compute.gcp.upbound.io/v1beta1
+            kind: Address
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $vmName }}-ip
+                gotemplating.fn.crossplane.io/composition-resource-name: static-ip
+            spec:
+              forProvider:
+                region: {{ $region }}
+                addressType: EXTERNAL
+                networkTier: STANDARD
+              providerConfigRef:
+                name: default
+            {{- end }}
+            {{- if gt (int $dataDiskSizeGb) 0 }}
+            ---
+            apiVersion: compute.gcp.upbound.io/v1beta1
+            kind: Disk
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $vmName }}-data
+                gotemplating.fn.crossplane.io/composition-resource-name: data-disk
+              labels:
+                resource: data-disk
+            spec:
+              forProvider:
+                zone: {{ $zone }}
+                size: {{ $dataDiskSizeGb }}
+                type: pd-standard
+              providerConfigRef:
+                name: default
+            ---
+            apiVersion: compute.gcp.upbound.io/v1beta1
+            kind: AttachedDisk
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $vmName }}-attach-data
+                gotemplating.fn.crossplane.io/composition-resource-name: attach-data-disk
+            spec:
+              forProvider:
+                instanceSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    resource: compute-instance
+                diskSelector:
+                  matchControllerRef: true
+                  matchLabels:
+                    resource: data-disk
+              providerConfigRef:
+                name: default
+            {{- end }}

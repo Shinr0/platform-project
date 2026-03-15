@@ -97,15 +97,18 @@ install_gcp_provider() {
 }
 
 install_crossplane_functions() {
-    if kubectl get function.pkg.crossplane.io function-patch-and-transform &>/dev/null 2>&1; then
-        warn "function-patch-and-transform already installed, skipping."
-    else
-        log "Installing function-patch-and-transform..."
-        kubectl apply -f "$(dirname "$0")/../crossplane/provider/function-patch-and-transform.yaml"
-        log "Waiting for function to become healthy..."
-        kubectl wait --for=condition=healthy function.pkg.crossplane.io/function-patch-and-transform \
-            --timeout=180s || warn "Function not yet healthy — it may need a few more minutes."
-    fi
+    local funcs=("function-patch-and-transform" "function-go-templating")
+    for func in "${funcs[@]}"; do
+        if kubectl get function.pkg.crossplane.io "$func" &>/dev/null 2>&1; then
+            warn "$func already installed, skipping."
+        else
+            log "Installing $func..."
+            kubectl apply -f "$(dirname "$0")/../crossplane/provider/${func}.yaml"
+            log "Waiting for $func to become healthy..."
+            kubectl wait --for=condition=healthy "function.pkg.crossplane.io/${func}" \
+                --timeout=180s || warn "$func not yet healthy — it may need a few more minutes."
+        fi
+    done
 }
 
 install_crossplane_compositions() {

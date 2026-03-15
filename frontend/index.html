@@ -433,9 +433,9 @@
                     <input type="number" id="editDataDisk" min="0" max="500">
                 </div>
                 <div class="form-group" style="display:flex;gap:24px;align-items:center;padding-top:22px">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                        <input type="checkbox" id="editSpot" style="width:18px;height:18px;accent-color:var(--primary)">
-                        Spot VM
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;opacity:0.5" title="Cannot change Spot on a running VM (GCP limitation)">
+                        <input type="checkbox" id="editSpot" style="width:18px;height:18px;accent-color:var(--primary)" disabled>
+                        Spot VM <span id="editSpotNote" style="display:none;font-size:0.7rem;color:var(--text-muted)">(locked)</span>
                     </label>
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                         <input type="checkbox" id="editStaticIp" style="width:18px;height:18px;accent-color:var(--primary)">
@@ -620,6 +620,8 @@ function openEditModal(name) {
     document.getElementById('editDiskSize').value = vm.diskSizeGb;
     document.getElementById('editDataDisk').value = vm.dataDiskSizeGb;
     document.getElementById('editSpot').checked = vm.spot;
+    document.getElementById('editSpot').disabled = true;
+    document.getElementById('editSpotNote').style.display = 'inline';
     document.getElementById('editStaticIp').checked = vm.staticIp;
     document.getElementById('editModal').classList.add('active');
 }
