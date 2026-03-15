@@ -11,8 +11,8 @@ spec:
     vmName: platform-test
     machineType: e2-micro
     zone: europe-west1-b
-    diskSizeGb: 40
+    diskSizeGb: 20
     imageFamily: debian-12
-    spot: true
-    staticIp: true
-    dataDiskSizeGb: 50
+    spot: false
+    staticIp: false
+    dataDiskSizeGb: 0
